@@ -14,7 +14,7 @@ import per.nonobeam.phucnhse183026.myapplication.R;
 import per.nonobeam.phucnhse183026.myapplication.helpers.DatabaseHelper;
 import per.nonobeam.phucnhse183026.myapplication.model.Product;
 
-public class ProductDetailActivity extends AppCompatActivity {
+public class ProductDetailActivity extends BaseActivity {
 
     TextView txtName, txtPrice, txtDesc;
     Button btnAddToCart;
@@ -26,19 +26,6 @@ public class ProductDetailActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_product_detail);
-
-        MaterialToolbar toolbar = findViewById(R.id.topAppBar);
-
-        toolbar.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == R.id.action_cart) {
-                startActivity(new Intent(this, CartActivity.class));
-                return true;
-            } else if (item.getItemId() == R.id.topAppBar) {
-                startActivity(new Intent(this, ProductListActivity.class));
-                return true;
-            }
-            return false;
-        });
 
         txtName = findViewById(R.id.txtNameDetail);
         txtPrice = findViewById(R.id.txtPriceDetail);

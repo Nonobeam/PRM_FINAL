@@ -3,12 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_home"
-        android:icon="@drawable/ic_home"
-        android:title="Home"
-        app:showAsAction="always" />
-
-    <item
         android:id="@+id/action_cart"
         android:icon="@drawable/ic_cart"
         android:title="Cart"

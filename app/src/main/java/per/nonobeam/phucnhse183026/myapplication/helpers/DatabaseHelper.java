@@ -23,7 +23,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE Users(id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)");
-        db.execSQL("CREATE TABLE Products(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, price REAL, desc TEXT, quantity INTEGER, sold INTEGER)");
+        db.execSQL("CREATE TABLE Products(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, price REAL, `desc` TEXT, quantity INTEGER, sold INTEGER)");
         db.execSQL("CREATE TABLE Cart(id INTEGER PRIMARY KEY AUTOINCREMENT, productId INTEGER, quantity INTEGER)");
 
         Random random = new Random();
@@ -132,7 +132,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
 
         Cursor cursor = db.rawQuery(
-                "SELECT p.id, p.name, p.desc, p.price, c.quantity " +
+                "SELECT p.id, p.name, p.`desc`, p.price, c.quantity " +
                         "FROM Cart c JOIN Products p ON c.productId = p.id", null);
 
         if (cursor.moveToFirst()) {

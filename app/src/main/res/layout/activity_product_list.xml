@@ -14,6 +14,7 @@
         android:background="?attr/colorPrimary"
         android:title="Products"
         android:titleTextColor="@android:color/white"
+        app:navigationIcon="@drawable/ic_home"
         app:menu="@menu/top_app_bar_menu"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
