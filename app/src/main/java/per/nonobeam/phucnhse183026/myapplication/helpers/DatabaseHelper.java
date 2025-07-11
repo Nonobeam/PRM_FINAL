@@ -149,4 +149,74 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         return list;
     }
+
+    public List<Product> getCartItems() {
+        List<Product> cartItems = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        // Update query to use correct column names that match your table schema
+        String query = "SELECT p.id, p.name, p.description, p.price, p.quantity, p.sold, c.quantity as cart_quantity " +
+                "FROM Products p " +
+                "INNER JOIN Cart c ON p.id = c.productId";
+
+        Cursor cursor = db.rawQuery(query, null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                // Use column index constants to avoid -1 errors
+                int idIdx = cursor.getColumnIndexOrThrow("id");
+                int nameIdx = cursor.getColumnIndexOrThrow("name");
+                int descIdx = cursor.getColumnIndexOrThrow("desc");
+                int priceIdx = cursor.getColumnIndexOrThrow("price");
+                int cartQtyIdx = cursor.getColumnIndexOrThrow("cart_quantity");
+                int soldIdx = cursor.getColumnIndexOrThrow("sold");
+
+                Product product = new Product(
+                        cursor.getInt(idIdx),
+                        cursor.getString(nameIdx),
+                        cursor.getString(descIdx),
+                        cursor.getDouble(priceIdx),
+                        cursor.getInt(cartQtyIdx),
+                        cursor.getInt(soldIdx)
+                );
+                cartItems.add(product);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return cartItems;
+    }
+
+    public boolean updateCartItemQuantity(int productId, int quantity) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("quantity", quantity);
+
+        return db.update("Cart", values, "productId = ?",
+                new String[]{String.valueOf(productId)}) > 0;
+    }
+
+    public boolean processCheckout(List<Product> selectedProducts) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            // Update Products table and clear Cart
+            for (Product product : selectedProducts) {
+                // Update sold quantity in Products
+                ContentValues productValues = new ContentValues();
+                productValues.put("sold", product.sold + product.quantity);
+                db.update("Products", productValues, "id = ?",
+                        new String[]{String.valueOf(product.id)});
+
+                // Remove from Cart
+                db.delete("Cart", "productId = ?",
+                        new String[]{String.valueOf(product.id)});
+            }
+            db.setTransactionSuccessful();
+            return true;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            db.endTransaction();
+        }
+    }
 }

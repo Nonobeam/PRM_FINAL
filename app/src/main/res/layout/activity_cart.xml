@@ -10,12 +10,11 @@
         style="@style/Widget.MaterialComponents.Toolbar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:paddingTop="16dp"
         android:background="?attr/colorPrimary"
-        android:title="Products"
-        android:titleTextColor="@android:color/white"
+        android:paddingTop="16dp"
+        app:title="Shopping Cart"
+        app:titleTextColor="@android:color/white"
         app:navigationIcon="@drawable/ic_home"
-        app:menu="@menu/top_app_bar_menu"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -37,7 +36,18 @@
         android:layout_height="0dp"
         android:padding="8dp"
         app:layout_constraintTop_toBottomOf="@id/txtTotal"
+        app:layout_constraintBottom_toTopOf="@id/btnCheckout"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <Button
+        android:id="@+id/btnCheckout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Checkout"
+        android:enabled="false"
+        android:layout_margin="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 </androidx.constraintlayout.widget.ConstraintLayout>
