@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace = "per.nonobeam.phucnhse183026.myapplication"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "per.nonobeam.phucnhse183026.myapplication"
