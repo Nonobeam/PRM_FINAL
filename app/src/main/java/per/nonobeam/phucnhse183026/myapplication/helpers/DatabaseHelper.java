@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Random;
 
 import per.nonobeam.phucnhse183026.myapplication.model.Product;
+import per.nonobeam.phucnhse183026.myapplication.model.ChatMessage;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "ShopDB";
@@ -25,7 +26,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE Users(id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)");
         db.execSQL("CREATE TABLE Products(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, price REAL, `desc` TEXT, quantity INTEGER, sold INTEGER)");
         db.execSQL("CREATE TABLE Cart(id INTEGER PRIMARY KEY AUTOINCREMENT, productId INTEGER, quantity INTEGER)");
-
+        db.execSQL("CREATE TABLE Messages(id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT, message TEXT, timestamp INTEGER)");
         Random random = new Random();
         for (int i = 1; i <= 100; i++) {
             String name = "Product " + i;
@@ -53,6 +54,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS Users");
         db.execSQL("DROP TABLE IF EXISTS Products");
         db.execSQL("DROP TABLE IF EXISTS Cart");
+        db.execSQL("DROP TABLE IF EXISTS Messages");
         onCreate(db);
     }
 
@@ -148,5 +150,36 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         cursor.close();
         return list;
+    }
+
+    public void addMessage(String sender, String message) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("sender", sender);
+        values.put("message", message);
+        values.put("timestamp", System.currentTimeMillis());
+        db.insert("Messages", null, values);
+        db.close();
+    }
+
+    public List<ChatMessage> getAllMessages() {
+        List<ChatMessage> messages = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM Messages ORDER BY timestamp ASC", null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                ChatMessage message = new ChatMessage(
+                        cursor.getString(1), // sender
+                        cursor.getString(2), // message
+                        cursor.getLong(3)    // timestamp
+                );
+                message.setId(cursor.getInt(0)); // id
+                messages.add(message);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        return messages;
     }
 }

@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
 
@@ -31,6 +32,9 @@ public class ProductListActivity extends BaseActivity {
 
         recyclerView = findViewById(R.id.recyclerViewProducts);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        FloatingActionButton fabChat = findViewById(R.id.fabChat);
+        fabChat.setOnClickListener(v -> startActivity(new Intent(this, ChatActivity.class)));
 
         db = new DatabaseHelper(this);
         productList = db.getAllProducts();
