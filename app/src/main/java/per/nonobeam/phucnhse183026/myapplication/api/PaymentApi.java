@@ -7,7 +7,6 @@ import retrofit2.http.Body;
 import retrofit2.http.POST;
 
 public interface PaymentApi {
-    @POST("/api/payment/simulate")
+    @POST("posts") // JSONPlaceholder endpoint
     Call<PaymentResponse> simulatePayment(@Body PaymentRequest request);
 }
-

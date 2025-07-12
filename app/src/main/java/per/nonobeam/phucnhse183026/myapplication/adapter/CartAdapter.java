@@ -45,8 +45,6 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull CartViewHolder holder, int position) {
-        // Lấy product ở vị trí hiện tại. Vẫn an toàn khi dùng position ở đây
-        // vì onBindViewHolder được gọi với position chính xác tại thời điểm binding.
         Product product = products.get(position);
 
         holder.txtName.setText(product.name);
@@ -66,7 +64,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             } else {
                 selectedItems.remove(currentPosition);
             }
-            updateTotalPrice(); // updateTotalPrice cũng cần nhận thức được việc position có thể thay đổi
+            updateTotalPrice();
         });
 
 

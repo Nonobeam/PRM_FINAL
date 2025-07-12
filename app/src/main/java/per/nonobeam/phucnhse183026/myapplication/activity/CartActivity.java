@@ -1,5 +1,6 @@
 package per.nonobeam.phucnhse183026.myapplication.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
@@ -43,16 +44,24 @@ public class CartActivity extends BaseActivity implements CartAdapter.OnCartUpda
         recyclerViewCart = findViewById(R.id.recyclerViewCart);
         txtTotal = findViewById(R.id.txtTotal);
         btnCheckout = findViewById(R.id.btnCheckout);
-
         btnCheckout.setOnClickListener(v -> processCheckout());
     }
 
+    // Add null checks
     private void loadCartItems() {
-        cartList = db.getCartItems(); // Load items from database
-        if (cartAdapter != null) {
-            cartAdapter.notifyDataSetChanged();
+        try {
+            cartList = db.getCartItems();
+            if (cartList == null) {
+                cartList = new ArrayList<>();
+            }
+            if (cartAdapter != null) {
+                cartAdapter.notifyDataSetChanged();
+            }
+            updateTotal();
+        } catch (Exception e) {
+            e.printStackTrace();
+            cartList = new ArrayList<>();
         }
-        updateTotal();
     }
     private void updateTotal() {
         double total = 0;
@@ -96,13 +105,13 @@ public class CartActivity extends BaseActivity implements CartAdapter.OnCartUpda
             return;
         }
 
-        if (db.processCheckout(selectedProducts)) {
-            Toast.makeText(this, "Checkout successful!", Toast.LENGTH_SHORT).show();
-            loadCartItems(); // Refresh cart
-            btnCheckout.setEnabled(false);
-        } else {
-            Toast.makeText(this, "Checkout failed", Toast.LENGTH_SHORT).show();
-        }
+        Intent intent = new Intent(this, PaymentActivity.class);
+
+        ArrayList<Product> selectedProductsArray = new ArrayList<>(selectedProducts);
+
+        intent.putParcelableArrayListExtra("selected_products", selectedProductsArray);
+
+        startActivity(intent);
     }
 
     @Override

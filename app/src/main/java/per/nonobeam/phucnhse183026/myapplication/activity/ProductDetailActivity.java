@@ -1,5 +1,6 @@
 package per.nonobeam.phucnhse183026.myapplication.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -21,7 +22,6 @@ public class ProductDetailActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_product_detail);
 
-        // Initialize views
         TextView txtName = findViewById(R.id.txtNameDetail);
         TextView txtPrice = findViewById(R.id.txtPriceDetail);
         TextView txtDesc = findViewById(R.id.txtDescDetail);
@@ -46,16 +46,36 @@ public class ProductDetailActivity extends BaseActivity {
                 int quantity = 1;
                 try {
                     quantity = Integer.parseInt(edtQuantity.getText().toString());
+                    if (quantity <= 0) {
+                        Toast.makeText(this, "Quantity must be greater than 0", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                 } catch (NumberFormatException e) {
                     quantity = 1;
                 }
-                boolean added = db.addToCart(productId, quantity);
-                Toast.makeText(this, added ? "Added to cart" : "Already in cart", Toast.LENGTH_SHORT).show();
-            });
 
+                int currentCartQuantity = db.getCartQuantity(productId);
+
+                boolean added = db.addToCart(productId, quantity);
+
+                if (added) {
+                    if (currentCartQuantity > 0) {
+                        int newQuantity = currentCartQuantity + quantity;
+                        Toast.makeText(this,
+                                String.format("Updated quantity to %d in cart", newQuantity),
+                                Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Added to cart", Toast.LENGTH_SHORT).show();
+                    }
+
+                    edtQuantity.setText("1");
+                } else {
+                    Toast.makeText(this, "Failed to add to cart", Toast.LENGTH_SHORT).show();
+                }
+            });
         } catch (Exception e) {
+            e.printStackTrace();
             Toast.makeText(this, "Error loading product details", Toast.LENGTH_SHORT).show();
-            finish();
         }
     }
 }

@@ -5,13 +5,9 @@ import android.os.Bundle;
 import android.widget.Toast;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-
 import android.net.Uri;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-
-import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.List;
 
@@ -27,15 +23,12 @@ public class ProductListActivity extends BaseActivity {
     DatabaseHelper db;
     List<Product> productList;
 
-
     FloatingActionButton fabMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_product_list);
-
-
 
         recyclerView = findViewById(R.id.recyclerViewProducts);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -49,15 +42,8 @@ public class ProductListActivity extends BaseActivity {
 
         productAdapter = new ProductAdapter(this, productList);
         recyclerView.setAdapter(productAdapter);
-
-
-
-
-
-        // Ánh xạ FloatingActionButton từ layout
         fabMap = findViewById(R.id.fab_maps);
 
-        // Đặt lắng nghe sự kiện click cho nút
         fabMap.setOnClickListener(v -> {
             // Địa chỉ cửa hàng ví dụ (mày có thể thay đổi)
             // Ví dụ: FPT Aptech International Academy, Vietnam
