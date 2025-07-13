@@ -12,9 +12,12 @@ public class Order implements Parcelable {
     public long orderDate;
     public String status;
     public List<OrderItem> orderItems;
+    public String paymentId;
 
-    public Order() {}
-
+    public Order() {
+        this.status = "PENDING";
+        this.orderDate = System.currentTimeMillis();
+    }
     protected Order(Parcel in) {
         orderId = in.readString();
         amount = in.readDouble();
@@ -56,4 +59,5 @@ public class Order implements Parcelable {
     public double getTotalAmount() {
         return amount + totalFee;
     }
+
 }

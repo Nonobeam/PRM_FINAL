@@ -93,31 +93,28 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                 if (currentPosition == RecyclerView.NO_POSITION) {
                     return;
                 }
+
                 Product product = products.get(currentPosition);
                 int availableQuantity = db.getProductById(product.id).quantity;
+
                 try {
                     if (listener != null) {
                         int newQuantity = Integer.parseInt(s.toString());
                         if (newQuantity > availableQuantity) {
-                            Toast.makeText(context, "Quantity cannot be greater than the available stock", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, "Quantity cannot be greater than available stock", Toast.LENGTH_SHORT).show();
                             holder.edtQuantity.setText(String.valueOf(availableQuantity));
                             holder.edtQuantity.setSelection(holder.edtQuantity.getText().length());
-                            listener.onQuantityChanged(currentPosition, availableQuantity);
                             return;
                         }
-                        // Update the quantity in the product list
+
+                        // CHỈ CẬP NHẬT PRODUCT OBJECT, KHÔNG CẬP NHẬT DB Ở ĐÂY
                         product.quantity = newQuantity;
-                        boolean success = db.updateCartItemQuantity(userId, product.id, newQuantity);
-                        if (success) {
-                            // If the database update is successful, notify the listener to update the total
-                            listener.onQuantityChanged(currentPosition, newQuantity);
-                        } else {
-                            // Handle failure if needed
-                            Toast.makeText(context, "Failed to update quantity in database", Toast.LENGTH_SHORT).show();
-                        }
+
+                        // GỬI VỀ CARTACTIVITY ĐỂ XỬ LÝ UPDATE DB
+                        listener.onQuantityChanged(currentPosition, newQuantity);
                     }
                 } catch (NumberFormatException e) {
-                    // Bỏ qua nếu nhập không phải là số
+                    // Ignore invalid input
                 }
             }
         };
