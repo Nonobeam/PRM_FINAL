@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -25,6 +26,7 @@ public class ChatActivity extends AppCompatActivity {
     private ChatAdapter chatAdapter;
     private List<ChatMessage> messages;
     private DatabaseHelper dbHelper;
+    private String currentUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,31 +43,47 @@ public class ChatActivity extends AppCompatActivity {
         messageInput = findViewById(R.id.messageInput);
         sendButton = findViewById(R.id.sendButton);
         chatRecyclerView = findViewById(R.id.chatRecyclerView);
-
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-
         dbHelper = new DatabaseHelper(this);
-
+        int userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getInt("userId", -1);
+        currentUser = dbHelper.getUsernameById(userId);
         loadMessages();
-
         sendButton.setOnClickListener(v -> sendMessage());
     }
 
     private void loadMessages() {
         messages = dbHelper.getAllMessages();
-        chatAdapter = new ChatAdapter(messages, this);
+        chatAdapter = new ChatAdapter(messages, this, currentUser);
         chatRecyclerView.setAdapter(chatAdapter);
         scrollToBottom();
     }
 
     private void sendMessage() {
         String messageText = messageInput.getText().toString().trim();
-        if (!messageText.isEmpty()) {
-            dbHelper.addMessage("You", messageText); // Save to DB
-            messageInput.setText(""); // Clear input
-            loadMessages(); // Refresh messages
+        if (messageText.isEmpty()) {
+            Log.e("ChatActivity", "Message is empty, cannot send.");
+            return;
         }
+        int userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getInt("userId", -1);
+        Log.d("ChatActivity", "userId: " + userId);
+        if (userId == -1) {
+            Log.e("ChatActivity", "User ID not found.");
+            return;
+        }
+        String sender = dbHelper.getUsernameById(userId);
+        if (sender == null || sender.isEmpty()) {
+            Log.e("ChatActivity", "Sender name not found.");
+            return;
+        }
+        dbHelper.addMessage(sender, messageText); // Save to DB
+        messageInput.setText("");
+        long timestamp = System.currentTimeMillis();
+        ChatMessage newMessage = new ChatMessage(sender, messageText, timestamp);
+        messages.add(newMessage);
+        chatAdapter.notifyItemInserted(messages.size() - 1);
+        scrollToBottom();
     }
+
 
     private void scrollToBottom() {
         if (messages.size() > 0) {

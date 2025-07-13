@@ -5,7 +5,6 @@ public class ChatMessage {
     public String sender;
     public String message;
     public long timestamp;
-    private boolean isSentByMe;
 
     public ChatMessage(String sender, String message, long timestamp) {
         this.sender = sender;
@@ -18,5 +17,4 @@ public class ChatMessage {
     public String getSender() { return sender; }
     public String getMessage() { return message; }
     public long getTimestamp() { return timestamp; }
-    public boolean isSentByMe() {return isSentByMe;}
 }
