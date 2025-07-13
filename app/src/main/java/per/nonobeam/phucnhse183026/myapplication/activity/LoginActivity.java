@@ -31,7 +31,14 @@ public class LoginActivity extends AppCompatActivity {
             String user = edtUsername.getText().toString();
             String pass = edtPassword.getText().toString();
 
-            if (db.checkUser(user, pass)) {
+            int userId = db.checkUser(user, pass);
+            if (userId != -1) {
+                // Save userId to SharedPreferences
+                getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
+                        .edit()
+                        .putInt("userId", userId)
+                        .apply();
+
                 Toast.makeText(this, "Login success!", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, ProductListActivity.class));
             } else {
