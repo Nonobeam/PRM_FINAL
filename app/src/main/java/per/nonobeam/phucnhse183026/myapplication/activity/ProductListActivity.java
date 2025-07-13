@@ -2,15 +2,13 @@ package per.nonobeam.phucnhse183026.myapplication.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.net.Uri;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
-
 import java.util.List;
-
 import per.nonobeam.phucnhse183026.myapplication.R;
 import per.nonobeam.phucnhse183026.myapplication.adapter.ProductAdapter;
 import per.nonobeam.phucnhse183026.myapplication.helpers.DatabaseHelper;
@@ -22,8 +20,8 @@ public class ProductListActivity extends BaseActivity {
     ProductAdapter productAdapter;
     DatabaseHelper db;
     List<Product> productList;
-
     FloatingActionButton fabMap;
+    TextView count;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,10 +30,13 @@ public class ProductListActivity extends BaseActivity {
 
         recyclerView = findViewById(R.id.recyclerViewProducts);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
+        count = findViewById(R.id.count);
+        FloatingActionButton fabChat = findViewById(R.id.fabChat);
+        fabChat.setOnClickListener(v -> startActivity(new Intent(this, ChatActivity.class)));
         db = new DatabaseHelper(this);
         productList = db.getAllProducts();
-
+        int userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getInt("userId", -1);
+        count.setText("("+db.getCartItemCount(userId)+")");
         if (productList.isEmpty()) {
             Toast.makeText(this, "No products found!", Toast.LENGTH_SHORT).show();
         }
@@ -43,9 +44,8 @@ public class ProductListActivity extends BaseActivity {
         productAdapter = new ProductAdapter(this, productList);
         recyclerView.setAdapter(productAdapter);
         fabMap = findViewById(R.id.fab_maps);
-
         fabMap.setOnClickListener(v -> {
-            // Địa chỉ cửa hàng ví dụ (mày có thể thay đổi)
+            // Địa chỉ cửa hàng ví dụ (có thể thay đổi)
             // Ví dụ: FPT Aptech International Academy, Vietnam
             String address = "Dai hoc FPT, Ho Chi Minh City, Vietnam";
             // Hoặc có thể dùng kinh độ, vĩ độ nếu có: String uri = "geo:10.794276,106.666352?q=FPT+Aptech+International+Academy";
@@ -60,12 +60,20 @@ public class ProductListActivity extends BaseActivity {
                 startActivity(mapIntent);
             } else {
                 // Nếu không có ứng dụng Google Maps, thông báo cho người dùng
-                Toast.makeText(ProductListActivity.this, "Google Maps app is not installed.", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(ProductListActivity.this, "Google Maps app is not installed.", Toast.LENGTH_SHORT).show();
                 // Hoặc mở bằng trình duyệt web
                 String webUri = "https://maps.google.com/?q=" + Uri.encode(address);
                 Intent webMapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUri));
                 startActivity(webMapIntent);
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        int userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getInt("userId", -1);
+        int cartItemCount = db.getCartItemCount(userId);
+        count.setText("(" + cartItemCount + ")");
     }
 }

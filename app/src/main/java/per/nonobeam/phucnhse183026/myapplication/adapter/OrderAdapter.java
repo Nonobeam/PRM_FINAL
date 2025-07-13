@@ -43,8 +43,8 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         holder.tvOrderId.setText("Order ID: " + order.orderId);
         holder.tvOrderDate.setText("Date: " + dateFormat.format(new Date(order.orderDate)));
         holder.tvOrderStatus.setText("Status: " + order.status);
-        holder.tvOrderAmount.setText("Amount: $" + String.format("%.2f", order.amount));
-        holder.tvOrderTotalFee.setText("Total: $" + String.format("%.2f", order.totalFee));
+        holder.tvTotal.setText("Total: $" + String.format("%.2f", order.amount));
+        holder.tvShippingFee.setText("Shipping Fee: $" + String.format("%.2f", order.totalFee));
 
         // Hiển thị items
         StringBuilder itemsText = new StringBuilder();
@@ -54,7 +54,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                     .append(" (x")
                     .append(item.quantity)
                     .append(") - $")
-                    .append(String.format("%.2f", item.totalPrice))
+                    .append(String.format(Locale.getDefault(), "%.2f", item.totalPrice))
                     .append("\n");
         }
         holder.tvOrderItems.setText(itemsText.toString());
@@ -66,15 +66,15 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     }
 
     public static class OrderViewHolder extends RecyclerView.ViewHolder {
-        TextView tvOrderId, tvOrderDate, tvOrderStatus, tvOrderAmount, tvOrderTotalFee, tvOrderItems;
+        TextView tvOrderId, tvOrderDate, tvOrderStatus, tvTotal, tvShippingFee, tvOrderItems;
 
         public OrderViewHolder(@NonNull View itemView) {
             super(itemView);
             tvOrderId = itemView.findViewById(R.id.tvOrderId);
             tvOrderDate = itemView.findViewById(R.id.tvOrderDate);
             tvOrderStatus = itemView.findViewById(R.id.tvOrderStatus);
-            tvOrderAmount = itemView.findViewById(R.id.tvOrderAmount);
-            tvOrderTotalFee = itemView.findViewById(R.id.tvOrderTotalFee);
+            tvTotal = itemView.findViewById(R.id.tvTotal);
+            tvShippingFee = itemView.findViewById(R.id.tvShippingFee);
             tvOrderItems = itemView.findViewById(R.id.tvOrderItems);
         }
     }

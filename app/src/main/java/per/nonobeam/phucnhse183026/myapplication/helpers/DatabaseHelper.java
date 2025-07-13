@@ -14,6 +14,7 @@ import java.util.Random;
 import per.nonobeam.phucnhse183026.myapplication.model.Order;
 import per.nonobeam.phucnhse183026.myapplication.model.OrderItem;
 import per.nonobeam.phucnhse183026.myapplication.model.Product;
+import per.nonobeam.phucnhse183026.myapplication.model.ChatMessage;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "ShopDB";
@@ -27,7 +28,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE Users(id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)");
         db.execSQL("CREATE TABLE Products(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, price REAL, `desc` TEXT, quantity INTEGER, sold INTEGER)");
-        db.execSQL("CREATE TABLE Cart(id INTEGER PRIMARY KEY AUTOINCREMENT, productId INTEGER, quantity INTEGER)");
+        db.execSQL("CREATE TABLE Cart(id INTEGER PRIMARY KEY AUTOINCREMENT, userId INTEGER, productId INTEGER, quantity INTEGER)");
         db.execSQL("CREATE TABLE orders (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "order_id TEXT UNIQUE," +
@@ -47,26 +48,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 "total_price REAL," +
                 "FOREIGN KEY(order_id) REFERENCES orders(order_id)" +
                 ")");
+        db.execSQL("CREATE TABLE Messages(id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT, message TEXT, timestamp INTEGER)");
         Random random = new Random();
         for (int i = 1; i <= 100; i++) {
             String name = "Product " + i;
             String desc = "Description for " + name;
-
             double price = 5 + (100 - 5) * random.nextDouble();
             price = Math.round(price * 100.0) / 100.0;
-
             int quantity = random.nextInt(91) + 10;
             int sold = random.nextInt(quantity + 1);
-
             String sql = "INSERT INTO Products (name, price, desc, quantity, sold) VALUES (" +
                     "'" + name + "', " +
                     price + ", " +
                     "'" + desc + "', " +
                     quantity + ", " +
                     sold + ");";
-
             db.execSQL(sql);
         }
+        ContentValues values = new ContentValues();
+        values.put("username", "admin");
+        values.put("password", "123456");
+        db.insert("Users", null, values);
     }
 
     @Override
@@ -74,6 +76,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS Users");
         db.execSQL("DROP TABLE IF EXISTS Products");
         db.execSQL("DROP TABLE IF EXISTS Cart");
+        db.execSQL("DROP TABLE IF EXISTS orders");
+        db.execSQL("DROP TABLE IF EXISTS order_items");
+        db.execSQL("DROP TABLE IF EXISTS Messages");
         onCreate(db);
     }
 
@@ -86,38 +91,47 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return result != -1;
     }
 
-    public boolean checkUser(String username, String password) {
+    public int checkUser(String username, String password) {
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM Users WHERE username = ? AND password = ?", new String[]{username, password});
-        boolean exists = cursor.getCount() > 0;
-        cursor.close();
-        return exists;
+        Cursor cursor = db.rawQuery("SELECT id FROM Users WHERE username = ? AND password = ?", new String[]{username, password});
+        if (cursor.moveToFirst()) {
+            int userId = cursor.getInt(0);
+            cursor.close();
+            return userId;
+        } else {
+            cursor.close();
+            return -1; // Invalid login
+        }
     }
 
-    public String getUserId(String username, String password) {
+    public String getUsernameById(int userId) {
         SQLiteDatabase db = this.getReadableDatabase();
-        String userId = null;
-
+        Cursor cursor = null;
+        String username = null;
         try {
-            String query = "SELECT id FROM Users WHERE username = ? AND password = ?";
-            Cursor cursor = db.rawQuery(query, new String[]{username, password});
-
-            if (cursor.moveToFirst()) {
-                userId = String.valueOf(cursor.getInt(0));
+            cursor = db.rawQuery("SELECT username FROM Users WHERE id = ?", new String[]{String.valueOf(userId)});
+            if (cursor != null && cursor.moveToFirst()) {
+                username = cursor.getString(0);
+            } else {
+                Log.e("DatabaseHelper", "No user found with ID: " + userId);  // Log if no user found
             }
-            cursor.close();
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
-
-        return userId;
+        if (username == null) {
+            Log.e("ChatActivity", "Sender name not found for userId: " + userId);  // Log error if null
+        }
+        return username;
     }
 
     public List<Product> getAllProducts() {
         List<Product> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT * FROM Products", null);
-
         if (cursor.moveToFirst()) {
             do {
                 int id = cursor.getInt(0);
@@ -126,11 +140,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 String desc = cursor.getString(3);
                 int quantity = cursor.getInt(4);
                 int sold = cursor.getInt(5);
-
                 list.add(new Product(id, name, desc, price, quantity, sold));
             } while (cursor.moveToNext());
         }
-
         cursor.close();
         return list;
     }
@@ -152,28 +164,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return null;
     }
 
-    public boolean addToCart(int productId, int quantity) {
+    public boolean addToCart(int userId, int productId, int quantity) {
         SQLiteDatabase db = this.getWritableDatabase();
-
-        Cursor check = db.rawQuery("SELECT quantity FROM Cart WHERE productId = ?",
-                new String[]{String.valueOf(productId)});
-
+        Product product = getProductById(productId);
+        if (product.quantity <= 0)
+            return false;
+        Cursor check = db.rawQuery("SELECT quantity FROM Cart WHERE userId = ? AND productId = ?",
+                new String[]{String.valueOf(userId), String.valueOf(productId)});
         if (check.getCount() > 0) {
             check.moveToFirst();
             int existingQuantity = check.getInt(0);
             int newQuantity = existingQuantity + quantity;
-
             check.close();
-
             ContentValues values = new ContentValues();
             values.put("quantity", newQuantity);
-
-            int result = db.update("Cart", values, "productId = ?",
-                    new String[]{String.valueOf(productId)});
+            int result = db.update("Cart", values, "userId = ? AND productId = ?",
+                    new String[]{String.valueOf(userId), String.valueOf(productId)});
             return result > 0;
         } else {
             check.close();
             ContentValues values = new ContentValues();
+            values.put("userId", userId);
             values.put("productId", productId);
             values.put("quantity", quantity);
 
@@ -182,17 +193,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public int getCartQuantity(int productId) {
+    public int getCartQuantity(int userId, int productId) {
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT quantity FROM Cart WHERE productId = ?",
-                new String[]{String.valueOf(productId)});
-
-        int quantity = 0;
+        Cursor cursor = db.rawQuery("SELECT quantity FROM Cart WHERE userId = ? AND productId = ?",
+                new String[]{String.valueOf(userId), String.valueOf(productId)});
         if (cursor.moveToFirst()) {
-            quantity = cursor.getInt(0);
+            int qty = cursor.getInt(0);
+            cursor.close();
+            return qty;
+        } else {
+            cursor.close();
+            return 0;
         }
-        cursor.close();
-        return quantity;
     }
 
     public List<Product> getCartProducts() {
@@ -218,16 +230,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return list;
     }
 
-    public List<Product> getCartItems() {
+    public List<Product> getCartItems(int userId) {
         List<Product> cartItems = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
 
         // Fixed query with correct column names
         String query = "SELECT p.id, p.name, p.`desc`, p.price, p.quantity, p.sold, c.quantity as cart_quantity " +
                 "FROM Products p " +
-                "INNER JOIN Cart c ON p.id = c.productId";
+                "INNER JOIN Cart c ON p.id = c.productId " +
+                "WHERE c.userId = ?";
 
-        Cursor cursor = db.rawQuery(query, null);
+        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(userId)});
 
         if (cursor.moveToFirst()) {
             do {
@@ -254,16 +267,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return cartItems;
     }
 
-    public boolean updateCartItemQuantity(int productId, int quantity) {
+    public boolean updateCartItemQuantity(int userId, int productId, int quantity) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("quantity", quantity);
 
-        return db.update("Cart", values, "productId = ?",
-                new String[]{String.valueOf(productId)}) > 0;
+        return db.update("Cart", values, "userId = ? AND productId = ?",
+                new String[]{String.valueOf(userId), String.valueOf(productId)}) > 0;
     }
 
-    public boolean processCheckout(List<Product> selectedProducts) {
+    public boolean deleteCartItem(int userId, int productId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        return db.delete("Cart", "userId = ? AND productId = ?",
+                new String[]{String.valueOf(userId), String.valueOf(productId)}) > 0;
+    }
+
+    public boolean processCheckout(List<Product> selectedProducts, String userId) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.beginTransaction();
         try {
@@ -289,8 +308,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 }
 
                 // Remove from Cart
-                db.delete("Cart", "productId = ?",
-                        new String[]{String.valueOf(product.id)});
+                db.delete("Cart", "productId = ? AND userId = ?",
+                        new String[]{String.valueOf(product.id), userId});
             }
             db.setTransactionSuccessful();
             return true;
@@ -425,5 +444,54 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private boolean getBooleanFromCursor(Cursor cursor, String columnName) {
         int index = cursor.getColumnIndex(columnName);
         return index >= 0 && cursor.getInt(index) == 1;
+    }
+
+    public void addMessage(String sender, String message) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("sender", sender);
+        values.put("message", message);
+        values.put("timestamp", System.currentTimeMillis());
+        db.insert("Messages", null, values);
+    }
+
+    public List<ChatMessage> getAllMessages() {
+        List<ChatMessage> messages = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM Messages ORDER BY timestamp ASC", null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                ChatMessage message = new ChatMessage(
+                        cursor.getString(1), // sender
+                        cursor.getString(2), // message
+                        cursor.getLong(3)    // timestamp
+                );
+                message.setId(cursor.getInt(0)); // id
+                messages.add(message);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        return messages;
+    }
+
+    public int getCartItemCount(int userId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = null;
+        int count = 0;
+        try {
+            cursor = db.rawQuery("SELECT SUM(quantity) FROM Cart WHERE userId = ?", new String[]{String.valueOf(userId)});
+            if (cursor != null && cursor.moveToFirst()) {
+                count = cursor.getInt(0);  // Get the count of items in the cart
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return count;
     }
 }

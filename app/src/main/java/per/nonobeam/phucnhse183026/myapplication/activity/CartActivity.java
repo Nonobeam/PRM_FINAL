@@ -50,7 +50,8 @@ public class CartActivity extends BaseActivity implements CartAdapter.OnCartUpda
     // Add null checks
     private void loadCartItems() {
         try {
-            cartList = db.getCartItems();
+            int userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getInt("userId", -1);
+            cartList = db.getCartItems(userId);
             if (cartList == null) {
                 cartList = new ArrayList<>();
             }
@@ -73,7 +74,8 @@ public class CartActivity extends BaseActivity implements CartAdapter.OnCartUpda
 
     private void setupRecyclerView() {
         recyclerViewCart.setLayoutManager(new LinearLayoutManager(this));
-        cartAdapter = new CartAdapter(this, cartList, this);
+        int userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getInt("userId", -1);
+        cartAdapter = new CartAdapter(this, cartList, this, userId);
         recyclerViewCart.setAdapter(cartAdapter);
     }
 
@@ -88,7 +90,8 @@ public class CartActivity extends BaseActivity implements CartAdapter.OnCartUpda
         Product product = cartList.get(position);
         if (newQuantity > 0) {
             product.quantity = newQuantity;
-            if (db.updateCartItemQuantity(product.id, newQuantity)) {
+            int userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getInt("userId", -1);
+            if (db.updateCartItemQuantity(userId, product.id, newQuantity)) {
                 updateTotal();
             } else {
                 Toast.makeText(this, "Failed to update quantity", Toast.LENGTH_SHORT).show();
@@ -104,13 +107,9 @@ public class CartActivity extends BaseActivity implements CartAdapter.OnCartUpda
             Toast.makeText(this, "No items selected", Toast.LENGTH_SHORT).show();
             return;
         }
-
         Intent intent = new Intent(this, PaymentActivity.class);
-
         ArrayList<Product> selectedProductsArray = new ArrayList<>(selectedProducts);
-
         intent.putParcelableArrayListExtra("selected_products", selectedProductsArray);
-
         startActivity(intent);
     }
 

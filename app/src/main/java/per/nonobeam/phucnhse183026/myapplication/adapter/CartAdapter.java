@@ -8,7 +8,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import per.nonobeam.phucnhse183026.myapplication.R;
+import per.nonobeam.phucnhse183026.myapplication.helpers.DatabaseHelper;
 import per.nonobeam.phucnhse183026.myapplication.model.Product;
 
 public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder> {
@@ -28,12 +31,15 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     private List<Product> products;
     private OnCartUpdateListener listener;
     private Map<Integer, Boolean> selectedItems;
-
-    public CartAdapter(Context context, List<Product> products, OnCartUpdateListener listener) {
+    private DatabaseHelper db;
+    private int userId;
+    public CartAdapter(Context context, List<Product> products, OnCartUpdateListener listener, int userId) {
         this.context = context;
         this.products = products;
         this.listener = listener;
         this.selectedItems = new HashMap<>();
+        this.db = new DatabaseHelper(context);
+        this.userId = userId;
     }
 
     @NonNull
@@ -83,16 +89,32 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
             @Override
             public void afterTextChanged(Editable s) {
-                int currentPosition = holder.getAdapterPosition();
+                int currentPosition = holder.getAbsoluteAdapterPosition();
                 if (currentPosition == RecyclerView.NO_POSITION) {
                     return;
                 }
+                Product product = products.get(currentPosition);
+                int availableQuantity = db.getProductById(product.id).quantity;
                 try {
                     if (listener != null) {
                         int newQuantity = Integer.parseInt(s.toString());
-                        if (currentPosition < products.size()) { // Kiểm tra để tránh IndexOutOfBounds
+                        if (newQuantity > availableQuantity) {
+                            Toast.makeText(context, "Quantity cannot be greater than the available stock", Toast.LENGTH_SHORT).show();
+                            holder.edtQuantity.setText(String.valueOf(availableQuantity));
+                            holder.edtQuantity.setSelection(holder.edtQuantity.getText().length());
+                            listener.onQuantityChanged(currentPosition, availableQuantity);
+                            return;
                         }
-                        listener.onQuantityChanged(currentPosition, newQuantity);
+                        // Update the quantity in the product list
+                        product.quantity = newQuantity;
+                        boolean success = db.updateCartItemQuantity(userId, product.id, newQuantity);
+                        if (success) {
+                            // If the database update is successful, notify the listener to update the total
+                            listener.onQuantityChanged(currentPosition, newQuantity);
+                        } else {
+                            // Handle failure if needed
+                            Toast.makeText(context, "Failed to update quantity in database", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 } catch (NumberFormatException e) {
                     // Bỏ qua nếu nhập không phải là số
@@ -100,6 +122,22 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             }
         };
         holder.edtQuantity.addTextChangedListener(holder.quantityTextWatcher);
+
+        // Handle Delete button click
+        holder.ivDelete.setOnClickListener(v -> {
+            int currentPosition = holder.getAbsoluteAdapterPosition();
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                Product productToDelete = products.get(currentPosition);
+                boolean deleted = db.deleteCartItem(userId, productToDelete.id);
+                if (deleted) {
+                    products.remove(currentPosition);
+                    notifyItemRemoved(currentPosition);
+                    updateTotalPrice();  // Update the total after deletion
+                } else {
+                    Toast.makeText(context, "Failed to delete item", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     @Override
@@ -138,6 +176,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         TextView txtName;
         TextView txtPrice;
         EditText edtQuantity;
+        ImageView ivDelete;
         TextWatcher quantityTextWatcher;
 
         CartViewHolder(View itemView) {
@@ -146,6 +185,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             txtName = itemView.findViewById(R.id.txtCartItemName);
             txtPrice = itemView.findViewById(R.id.txtCartItemPrice);
             edtQuantity = itemView.findViewById(R.id.edtCartQuantity);
+            ivDelete = itemView.findViewById(R.id.iv_Delete);
         }
     }
 
@@ -153,14 +193,5 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         void onItemSelected(List<Product> selectedItems, double total);
 
         void onQuantityChanged(int position, int newQuantity);
-    }
-
-    public void updateProductQuantity(int position, int newQuantity) {
-        if (position >= 0 && position < products.size()) {
-            products.get(position).quantity = newQuantity;
-            if (selectedItems.containsKey(position) && selectedItems.get(position)) {
-                updateTotalPrice();
-            }
-        }
     }
 }
