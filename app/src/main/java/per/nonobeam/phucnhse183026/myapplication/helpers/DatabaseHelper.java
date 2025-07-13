@@ -18,7 +18,7 @@ import per.nonobeam.phucnhse183026.myapplication.model.ChatMessage;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "ShopDB";
-    private static final int DB_VERSION = 2;
+    private static final int DB_VERSION = 3;
 
     public DatabaseHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
@@ -267,15 +267,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return cartItems;
     }
 
+    // DatabaseHelper.java
     public boolean updateCartItemQuantity(int userId, int productId, int quantity) {
         SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put("quantity", quantity);
 
-        return db.update("Cart", values, "userId = ? AND productId = ?",
-                new String[]{String.valueOf(userId), String.valueOf(productId)}) > 0;
+        try {
+            Product product = getProductById(productId);
+            if (product == null || product.quantity < quantity) {
+                return false;
+            }
+
+            ContentValues values = new ContentValues();
+            values.put("quantity", quantity);
+
+            int result = db.update("cart", values,
+                    "user_id = ? AND product_id = ?",
+                    new String[]{String.valueOf(userId), String.valueOf(productId)});
+
+            return result > 0;
+        } catch (Exception e) {
+            Log.e("DatabaseHelper", "Error updating cart quantity", e);
+            return false;
+        } finally {
+            db.close();
+        }
     }
-
     public boolean deleteCartItem(int userId, int productId) {
         SQLiteDatabase db = this.getWritableDatabase();
         return db.delete("Cart", "userId = ? AND productId = ?",

@@ -2,6 +2,7 @@ package per.nonobeam.phucnhse183026.myapplication.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -27,6 +28,8 @@ public class CartActivity extends BaseActivity implements CartAdapter.OnCartUpda
     private Button btnCheckout;
     private List<Product> cartList;
     private DatabaseHelper db;
+    private Handler updateHandler = new Handler();
+    private Runnable updateRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,14 +93,29 @@ public class CartActivity extends BaseActivity implements CartAdapter.OnCartUpda
         Product product = cartList.get(position);
         if (newQuantity > 0) {
             product.quantity = newQuantity;
-            int userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getInt("userId", -1);
-            if (db.updateCartItemQuantity(userId, product.id, newQuantity)) {
-                updateTotal();
-            } else {
-                Toast.makeText(this, "Failed to update quantity", Toast.LENGTH_SHORT).show();
+
+            // DEBOUNCE - chờ 500ms trước khi update DB
+            if (updateRunnable != null) {
+                updateHandler.removeCallbacks(updateRunnable);
             }
-        } else {
-            Toast.makeText(this, "Quantity must be greater than 0", Toast.LENGTH_SHORT).show();
+
+            updateRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    int userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getInt("userId", -1);
+                    if (db.updateCartItemQuantity(userId, product.id, newQuantity)) {
+                        updateTotal();
+                    } else {
+                        Toast.makeText(CartActivity.this, "Failed to update quantity", Toast.LENGTH_SHORT).show();
+                        // Rollback UI
+                        loadCartItems();
+                    }
+                }
+            };
+
+            updateHandler.postDelayed(updateRunnable, 500);
+
+            updateTotal();
         }
     }
 
