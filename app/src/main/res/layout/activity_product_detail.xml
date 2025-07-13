@@ -20,6 +20,18 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
+        android:id="@+id/count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="28dp"
+        android:layout_marginEnd="20dp"
+        android:text="(0)"
+        android:textSize="20dp"
+        android:textColor="@color/black"/>
+
+    <TextView
         android:id="@+id/txtNameDetail"
         android:textStyle="bold"
         android:textSize="20sp"
